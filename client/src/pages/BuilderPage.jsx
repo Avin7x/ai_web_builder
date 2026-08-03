@@ -1,9 +1,9 @@
 
 
-const BuilderPage = () => {
+const Builderpage = () => {
   return (
-    <div>BuilderPage</div>
+    <div>Builderpage</div>
   )
 }
 
-export default BuilderPage
+export default Builderpage

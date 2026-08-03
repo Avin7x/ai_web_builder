@@ -1,8 +1,8 @@
-import { Routes, Route } from 'react-router-dom'
+import { Routes, Route, Navigate } from 'react-router-dom'
 import { AuthLayout, GuestLayout } from './pages/Layout'
 import AuthPage from './pages/AuthPage'
-import Homepage from './pages/Homepage'
-import BuilderPage from './pages/Builderpage'
+import Homepage from './pages/HomePage'
+import BuilderPage from './pages/BuilderPage'
 import PreviewPage from './pages/PreviewPage'
 
 const App = () => {
@@ -21,6 +21,9 @@ const App = () => {
         <Route path='/builder/:id' element={<BuilderPage /> }/>
         <Route path='/preview/:id' element={<PreviewPage /> }/>
       </Route>
+
+      {/* Catch-all */}
+      <Route path='*' element={<Navigate to='/' replace/>}/>
 
     </Routes>
   )
