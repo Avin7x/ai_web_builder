@@ -18,7 +18,7 @@ const Loginleft = () => {
           exports.
         </p>
         <p className="text-zinc-300 text-sm mt-12">
-          Copyrigh © {new Date().getFullYear()} BuilderAI
+            Copyright © {new Date().getFullYear()} BuilderAI
         </p>
       </div>
     </div>

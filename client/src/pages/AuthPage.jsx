@@ -29,9 +29,10 @@ const AuthPage = ({ mode }) => {
       }
     } catch (error) {
       setError(
-        error.message || mode === "login"
-          ? "Invalid email or password"
-          : "Registration failed",
+         error.message ||
+          (mode === "login"
+           ? "Invalid email or password"
+           : "Registration failed")
       );
     } finally {
       setLoading(false);
