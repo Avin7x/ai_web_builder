@@ -104,36 +104,48 @@ export function AppContextProvider({ children }) {
         }
     }
 
-    const loadProject = async (id, silent = false) => {
-        if(!user) return;
-        if(!silent) setLoadingActiveProject(true);
-        try {
-            const { data } = await api.get(`/api/projects/${id}`);
-            setActiveProject(data);
+  const loadingProjectRef = useRef(false);
 
-            // Default file selection
-            const files = Object.keys(data.files);
-            if(files.length > 0){
-                setActiveFile((prev) => {
-                    if(files.includes(prev)) return prev;
-                    if(files.includes("/App.js")) return "/App.js";
-                    return files[0];
-                    
-                })
-            }
-        } catch (error) {
-            console.error("Failed to load project", error.message);
-            if(!silent){
-                 toast.error("Failed to load project details");
-                 navigate("/");
-            }
-           
-        } finally {
-           if(!silent) setLoadingActiveProject(false);
-        }
+  const loadProject = useCallback(async (id, silent = false) => {
+    if (!user || loadingProjectRef.current) return;
+
+    loadingProjectRef.current = true;
+
+    if (!silent) {
+      setLoadingActiveProject(true);
     }
 
-    // Automatically poll active project status is generating or pending
+    try {
+      const { data } = await api.get(`/api/projects/${id}`);
+
+      setActiveProject(data);
+
+      const files = Object.keys(data.files ?? {});
+
+      if (files.length > 0) {
+        setActiveFile((prev) => {
+          if (files.includes(prev)) return prev;
+          if (files.includes("/App.js")) return "/App.js";
+          return files[0];
+        });
+      }
+    } catch (error) {
+      console.error("Failed to load project", error.message);
+
+      if (!silent) {
+        toast.error("Failed to load project details");
+        navigate("/");
+      }
+    } finally {
+      loadingProjectRef.current = false;
+
+      if (!silent) {
+        setLoadingActiveProject(false);
+      }
+    }
+  }, [user, navigate]);
+
+    // Automatically poll active project when status is generating or pending or revising
     useEffect(()=>{
         if(!activeProject?._id || !user) return;
 
