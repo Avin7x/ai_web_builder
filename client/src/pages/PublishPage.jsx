@@ -38,7 +38,7 @@ const PublishPage = () => {
           <AlertCircleIcon size={24}/>
         </div>
         <h1 className="text-lg font-semibold text-zinc-900 mb-1.5">
-          Website Unavailiable
+          Website Unavailable
         </h1>
         <p className="text-sm text-zinc-500 max-w-sm leading-relaxed mb-6">
           {error}
