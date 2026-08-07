@@ -124,7 +124,7 @@ export function AppContextProvider({ children }) {
 
       const files = Object.keys(data.files ?? {});
 
-      if (files.length > 0) {
+      if (files.length > 0) {3
         setActiveFile((prev) => {
           if (files.includes(prev)) return prev;
           if (files.includes("/App.js")) return "/App.js";
@@ -236,7 +236,7 @@ export function AppContextProvider({ children }) {
 
     useEffect(()=> {
       return ()=> {
-        debouncedSave.cancel()
+        debouncedSave.flush()
 
       }
     }, [debouncedSave])

@@ -30,16 +30,6 @@ const Builderpage = () => {
     loadProject(id);
   }, [id, loadProject]);
 
-  useEffect(()=>{
-    if(!id || !activeProject) return;
-    if(["pending", "generating"].includes(activeProject.status)){
-      const interval = setInterval(()=>{
-        loadProject(id, true);
-      }, 1500)
-      return ()=> clearInterval(interval);
-    }
-    loadProject(id);
-  }, [id, loadProject, activeProject?.status]);
 
   const handlePreview = () => {
     if(!id) return;
@@ -55,7 +45,7 @@ const Builderpage = () => {
       setPublishUrl(url);
       toast.success("website published successfully!");
     } catch (error) {
-      console.error("Published failed:", err);
+      console.error("Published failed:", error);
       toast.error(error.response?.data?.message || "Published failed")
     } finally {
       setPublishing(false);

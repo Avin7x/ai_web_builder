@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react"
 import { SandpackCodeEditor, SandpackLayout, SandpackPreview, SandpackProvider, useSandpack } from "@codesandbox/sandpack-react"
 import { detectDependencies } from "../utils/sandpackUtils";
 import { useAppContext } from "../context/AppContext";
-import SandpackErrorMonitor from "./SandPackErrorMonitor";
+import SandpackErrorMonitor from "./SandpackErrorMonitor";
 
 // Watches for file edits inside sandpack editor and saves changes to DB and live state
 function SandpackFileWatcher ({ onLiveFilesChange }) {
@@ -96,7 +96,7 @@ const PreviewPanel = ({project, activeFile, showCode}) => {
     <div className="w-full h-full">
         <SandpackProvider key={project._id} template="react" 
         files={sandPackFiles} 
-        customSetup={dependencies} 
+        customSetup={{dependencies}} 
         options={{
             externalResources: [
                 "https://cdn.tailwindcss.com",
@@ -146,7 +146,7 @@ const PreviewPanel = ({project, activeFile, showCode}) => {
                     <SandpackCodeEditor showTabs showLineNumbers showInlineErrors wrapContent style={{height: "100%", flex: 1, minWidth: 0}}/>
                 )}
 
-                <SandpackPreview showNavigator={false} showRefreshButton showOpenInCodeSandbox={false}  style={{height: "100%", flex: showCode ? 1 : 2, minWidth: 0}}/>
+                <SandpackPreview showNavigator={false} showRefreshButton showSandpackErrorOverlay={showErrorOverlay}   showOpenInCodeSandbox={false}  style={{height: "100%", flex: showCode ? 1 : 2, minWidth: 0}}/>
 
             </SandpackLayout>
 
