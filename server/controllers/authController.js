@@ -7,7 +7,9 @@ const setSessionCookie = (res, payload) => {
         throw new Error("JWT_SECRET is not configured");
     }
     // generate token
-    const token = jwt.sign(payload, process.env.JWT_SECRET);
+    const token = jwt.sign(payload, process.env.JWT_SECRET, {
+        expiresIn: "30d"
+    });
 
     res.cookie('token', token, {
         httpOnly: true,
@@ -104,5 +106,5 @@ export async function me(req, res) {
          return res.status(404).json({ error: "User not found" });
     }
 
-    return res.status({user});
+    return res.json({user});
 }

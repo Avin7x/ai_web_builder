@@ -22,13 +22,15 @@ app.get("/", (req, res)=>{
     res.send("Server is Live!")
 });
 
+// Routes
+app.use('/api/auth', authRouter);
+
 // Centralized error handler
 app.use((err, req, res, next) => {
     console.error(`[Error] ${err.message}`);
     res.status(500).json({error: err.message});
 });
 
-app.use('/api/auth', authRouter);
 
 const port = process.env.PORT || 3000;
 
