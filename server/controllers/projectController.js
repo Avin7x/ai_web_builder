@@ -116,7 +116,7 @@ async function runBackgroundGeneration (projectId, prompt) {
             project.status = "completed";
             project.version = 1;
             if(result.description) {
-                project.name = result.description;
+                project.description = result.description;
             }
             project.messages.push({
                 role: "assistant",
@@ -164,7 +164,7 @@ export async function getProject (req, res) {
         return res.status(401).json({error: "Unauthorized"});
     }
     const { id } = req.params;
-    const project = await Project.findOne({_id: id});
+    const project = await Project.findOne({_id: id, owner: req.user.userId});
 
     if(!project){
         return res.status(404).json({error: "Project not found"});
@@ -182,7 +182,7 @@ export async function getProject (req, res) {
         messages: project.messages,
         version: project.version,
         status: project.status,
-        filesPlanned: project.filesGenerated,
+        filesPlanned: project.filesPlanned,
         filesGenerated: project.filesGenerated,
         currentFile: project.currentFile,
         error: project.error,
@@ -239,9 +239,7 @@ export async function updateProjectFiles (req, res) {
 
     const filesObj = {};
     for(const [path, entry] of Object.entries(project.files)){
-        if(typeof content === 'string'){
-            filesObj[path] = entry.content;
-        }
+        filesObj[path] = entry.content;
     }
 
     return res.json({

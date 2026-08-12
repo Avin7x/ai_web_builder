@@ -46,7 +46,7 @@ export async function chat(req, res) {
 
         // Include ALL file contents so that AI can do accurate search/replace
         const relevantFiles = {};
-        for(const [path, entry] of Object.entries(files)){
+        for(const [path, entry] of Object.entries(project.files)){
             relevantFiles[path] = entry.content;
         }
 
@@ -59,7 +59,7 @@ export async function chat(req, res) {
         console.log(`[AI] Revising project ${project._id}: "${prompt.slice(0, 80)}..."` + `(${manifest.length} files, manifest ~${JSON.stringify(manifest).length} chars)`);
 
         // Call AI with manifest + relevant files
-        const result = await reviseProject(prompt, relevantFiles, recentMessages);
+        const result = await reviseProject(prompt, manifest, relevantFiles, recentMessages);
 
         console.log(`[AI] Got ${result.operations.length} operations: ${result.description}`);
 

@@ -51,9 +51,9 @@ export function validateAndFixCode(code, filePath, context) {
     // 4. Self-close void elements that aren't self-closed
     for (const tag of VOID_ELEMENTS) {
         // Match <tag ... > that is NOT already self-closed (no / before >)
-        const voidRegex = new RegExp(`<${tag}(\\s[^>]*?)?(?<!/)>`, "gi");
+        const voidRegex = new RegExp(`<${tag}(\\s[^>]*?)?(?<!/)>`, "g");
         if (voidRegex.test(code)) {
-            code = code.replace(new RegExp(`<${tag}(\\s[^>]*?)?(?<!/)>`, "gi"), (match, attrs) => `<${tag}${attrs || ""} />`);
+            code = code.replace(new RegExp(`<${tag}(\\s[^>]*?)?(?<!/)>`, "g"), (match, attrs) => `<${tag}${attrs || ""} />`);
             warnings.push(`${filePath}: Self-closed <${tag}> elements`);
         }
     }
@@ -69,13 +69,17 @@ export function validateAndFixCode(code, filePath, context) {
         if (componentName) {
             // Check if there's already a named export
             const namedExportRegex = new RegExp(`export\\s+(function|const)\\s+${componentName}`);
-            if (namedExportRegex.test(code)) {
+            const named = code.match(namedExportRegex);
+            if (named && named[1] === "function") {
                 // Convert `export function X` → `export default function X`
-                code = code.replace(new RegExp(`export\\s+(function|const)\\s+${componentName}`), `export default $1 ${componentName}`);
-            } else {
-                // Add default export at the end
+                code = code.replace(namedExportRegex, `export default function ${componentName}`);
+            } else if (named) {
+                // `export default const X` is invalid; keep the named export and append a default.
                 code = code.trimEnd() + `\n\nexport default ${componentName};\n`;
-            }
+            } else {
+                 // Add default export at the end
+                 code = code.trimEnd() + `\n\nexport default ${componentName};\n`;
+             }
             warnings.push(`${filePath}: Added missing default export for '${componentName}'`);
         }
     }
@@ -149,9 +153,9 @@ export function validateRevisionContent(content, filePath, op) {
 
     // Self-close void elements
     for (const tag of VOID_ELEMENTS) {
-        const voidRegex = new RegExp(`<${tag}(\\s[^>]*?)?(?<!/)>`, "gi");
+        const voidRegex = new RegExp(`<${tag}(\\s[^>]*?)?(?<!/)>`, "g");
         if (voidRegex.test(content)) {
-            content = content.replace(new RegExp(`<${tag}(\\s[^>]*?)?(?<!/)>`, "gi"), (match, attrs) => `<${tag}${attrs || ""} />`);
+            content = content.replace(new RegExp(`<${tag}(\\s[^>]*?)?(?<!/)>`, "g"), (match, attrs) => `<${tag}${attrs || ""} />`);
             warnings.push(`${filePath}: Self-closed <${tag}> in replacement`);
         }
     }

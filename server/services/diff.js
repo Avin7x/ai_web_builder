@@ -18,6 +18,10 @@ export function applyOperations(currentFiles, operations) {
                         errors.push(`create ${op.path}: missing content`);
                         break;
                     }
+                    if (files[op.path]) {
+                        errors.push(`create ${op.path}: file already exists`);
+                        break;
+                    }
                     files[op.path] = {
                         content: op.content,
                         hash: hashContent(op.content),
