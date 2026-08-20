@@ -1,7 +1,11 @@
 import crypto from "crypto";
 
 export function hashContent(content) {
-    return crypto.createHash("md5").update(content).digest("hex").slice(0, 12);
+    return crypto
+        .createHash("md5")
+        .update(content)
+        .digest("hex")
+        .slice(0, 12);
 }
 
 // Apply AI file operations (create, update, delete) to project files
@@ -12,57 +16,91 @@ export function applyOperations(currentFiles, operations) {
 
     for (const op of operations) {
         try {
+            // Normalize path so "App.js" and "/App.js" are treated the same
+            const path = op.path?.startsWith("/")
+                ? op.path
+                : `/${op.path}`;
+
             switch (op.op) {
                 case "create": {
-                    if (!op.content) {
-                        errors.push(`create ${op.path}: missing content`);
+                    if (op.content == null) {
+                        errors.push(`create ${path}: missing content`);
                         break;
                     }
-                    if (files[op.path]) {
-                        errors.push(`create ${op.path}: file already exists`);
+
+                    if (files[path]) {
+                        errors.push(`create ${path}: file already exists`);
                         break;
                     }
-                    files[op.path] = {
+
+                    files[path] = {
                         content: op.content,
                         hash: hashContent(op.content),
                     };
-                    applied.push(`created ${op.path}`);
+
+                    applied.push(`created ${path}`);
                     break;
                 }
 
                 case "update": {
-                    const existing = files[op.path];
-                    if (!existing) {
-                        errors.push(`update ${op.path}: file not found`);
-                        break;
-                    }
-                    if (!op.search || op.replace == null) {
-                        errors.push(`update ${op.path}: missing search/replace`);
-                        break;
-                    }
+    const existing = files[path];
 
-                    const newContent = searchReplace(existing.content, op.search, op.replace);
+    if (!existing) {
+        errors.push(`update ${path}: file not found`);
+        break;
+    }
 
-                    if (newContent === null) {
-                        errors.push(`update ${op.path}: search string not found`);
-                        break;
-                    }
+    // Preferred: replace the complete file
+    if (op.content != null) {
+        files[path] = {
+            content: op.content,
+            hash: hashContent(op.content),
+        };
 
-                    files[op.path] = {
-                        content: newContent,
-                        hash: hashContent(newContent),
-                    };
-                    applied.push(`updated ${op.path}`);
-                    break;
-                }
+        applied.push(`updated ${path}`);
+        break;
+    }
+
+    // Fallback: search/replace
+    if (!op.search || op.replace == null) {
+        errors.push(
+            `update ${path}: missing content or search/replace`
+        );
+        break;
+    }
+
+    const newContent = searchReplace(
+        existing.content,
+        op.search,
+        op.replace
+    );
+
+    if (newContent === null) {
+        errors.push(
+            `update ${path}: search string not found`
+        );
+        break;
+    }
+
+    files[path] = {
+        content: newContent,
+        hash: hashContent(newContent),
+    };
+
+    applied.push(`updated ${path}`);
+    break;
+}
 
                 case "delete": {
-                    if (files[op.path]) {
-                        delete files[op.path];
-                        applied.push(`deleted ${op.path}`);
+                    if (files[path]) {
+                        delete files[path];
+                        applied.push(`deleted ${path}`);
                     } else {
-                        errors.push(`delete ${op.path}: file not found`);
+                        errors.push(
+                            `delete ${path}: file not found`
+                        );
                     }
+
                     break;
                 }
 
@@ -70,11 +108,17 @@ export function applyOperations(currentFiles, operations) {
                     errors.push(`unknown op: ${op.op}`);
             }
         } catch (err) {
-            errors.push(`${op.op} ${op.path}: ${err.message}`);
+            errors.push(
+                `${op.op} ${op.path}: ${err.message}`
+            );
         }
     }
 
-    return { files, applied, errors };
+    return {
+        files,
+        applied,
+        errors,
+    };
 }
 
 // Search and replace code with fallback whitespace normalization matching
@@ -84,7 +128,8 @@ function searchReplace(content, search, replace) {
         return content.replace(search, () => replace);
     }
 
-    // 2. Try with normalized whitespace (collapse multiple spaces/tabs, trim lines)
+    // 2. Try with normalized whitespace
+    // Collapse multiple spaces/tabs and trim each line
     const normalizeWs = (s) =>
         s
             .split("\n")
@@ -100,19 +145,30 @@ function searchReplace(content, search, replace) {
         const searchLines = normalizedSearch.split("\n");
         const contentLines = content.split("\n");
 
-        for (let i = 0; i <= contentLines.length - searchLines.length; i++) {
+        for (
+            let i = 0;
+            i <= contentLines.length - searchLines.length;
+            i++
+        ) {
             let match = true;
+
             for (let j = 0; j < searchLines.length; j++) {
-                if (normalizeWs(contentLines[i + j]) !== searchLines[j]) {
+                if (
+                    normalizeWs(contentLines[i + j]) !==
+                    searchLines[j]
+                ) {
                     match = false;
                     break;
                 }
             }
+
             if (match) {
-                const before = contentLines.slice(0, i);
-                const after = contentLines.slice(i + searchLines.length);
-                return [...before, replace, ...after].join("\n");
-            }
+            const before = contentLines.slice(0, i);
+            const after = contentLines.slice(
+                i + searchLines.length
+            );
+            return [...before, replace, ...after].join("\n");
+        }
         }
     }
 
