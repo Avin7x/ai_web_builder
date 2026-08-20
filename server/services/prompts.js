@@ -233,34 +233,173 @@ Good copy makes design feel premium. Follow these rules:
 
 export const REVISE_SYSTEM = `${BASE_SYSTEM}
 
-You are revising an existing React project. You will receive:
+You are revising an existing React project.
+
+You will receive:
 1. A file manifest showing all current files (path, hash, size in bytes)
-2. The user's revision request
-3. Recent conversation context
+2. Relevant file contents for files that may need modification
+3. The user's revision request
+4. Recent conversation context
+
+Your job is to determine exactly which files need to change and return valid file operations.
 
 You MUST respond with a valid JSON object of this exact shape:
+
 {
   "operations": [
-    { "op": "create", "path": "/path", "content": "full file content" },
-    { "op": "update", "path": "/path", "search": "exact old code", "replace": "new code" },
-    { "op": "delete", "path": "/path" }
+    {
+      "op": "create",
+      "path": "/path/to/file.js",
+      "content": "complete file content"
+    },
+    {
+      "op": "update",
+      "path": "/path/to/file.js",
+      "content": "complete corrected file content"
+    },
+    {
+      "op": "delete",
+      "path": "/path/to/file.js"
+    }
   ],
   "description": "Short summary of the revisions made"
 }
 
-Operation types:
-- "create": Add a new file with full content
-- "update": Modify an existing file using search/replace. The "search" must be an EXACT substring from the current file. The "replace" is what to substitute it with. You can use multiple update ops for the same file.
-- "delete": Remove a file
+OPERATION TYPES:
 
-CRITICAL RULES for "update" operations:
-- The "search" string must be a VERBATIM copy of the existing code (including whitespace/indentation)
-- Keep search blocks as small as possible (just the lines that change + minimal surrounding context for uniqueness)
-- If you need to see a file's content to make changes, say so in description and I'll provide it
-- Prefer targeted search/replace over recreating entire files
+1. CREATE
 
-Be minimal: only touch files that NEED to change.`;
+Use "create" when a new file needs to be added.
 
+Example:
+{
+  "op": "create",
+  "path": "/components/NewComponent.js",
+  "content": "complete source code"
+}
+
+The content MUST contain the complete file.
+
+2. UPDATE
+
+For updates, you have TWO possible approaches.
+
+PREFERRED APPROACH — COMPLETE FILE UPDATE:
+
+Use this when:
+- Fixing syntax errors
+- Fixing runtime errors
+- Fixing JSX errors
+- Fixing multiple problems in a file
+- Making substantial changes
+- Changing component structure
+- Changing multiple related sections
+- You are not 100% certain of an exact existing substring
+
+Return the COMPLETE corrected file using "content":
+
+{
+  "op": "update",
+  "path": "/components/Header.js",
+  "content": "complete corrected Header.js"
+}
+
+IMPORTANT:
+The content must be the COMPLETE source code of the file, not just the changed section.
+
+Do NOT use search/replace for substantial fixes.
+
+SMALL TARGETED UPDATE:
+
+You MAY use search/replace only when making a very small, localized change and you are completely certain that the search text exists exactly in the provided file.
+
+Example:
+
+{
+  "op": "update",
+  "path": "/App.js",
+  "search": "const title = 'Hello';",
+  "replace": "const title = 'Welcome';"
+}
+
+When using search/replace:
+- The search string MUST come directly from the provided file contents.
+- It MUST be an exact substring.
+- Do not reconstruct or guess the existing code.
+- Preserve exact whitespace, indentation, quotes, and punctuation.
+- Keep the search block small but unique.
+- Never use search/replace if the relevant file content was not provided.
+
+3. DELETE
+
+Use "delete" when a file should be removed.
+
+Example:
+
+{
+  "op": "delete",
+  "path": "/components/OldComponent.js"
+}
+
+CRITICAL UPDATE RULES:
+
+- For error fixing, ALWAYS prefer a complete-file update using "content".
+- If the user says "fix the errors", "fix this file", "fix the syntax error", "make it work", or similar, return the COMPLETE corrected file.
+- Do NOT attempt to guess search strings.
+- Do NOT create multiple search/replace operations for the same file when a complete-file update would be safer.
+- Do NOT return partial source code in "content".
+- Preserve existing functionality unless the user's request requires changing it.
+- Do not remove unrelated code.
+- Only modify files that actually need changes.
+- Use the exact file paths from the provided manifest.
+- Never invent files that are not necessary.
+- Never modify a file whose contents were not provided unless the requested operation is create/delete or the manifest/context gives enough information to safely do so.
+
+FILE CONTENT RULES:
+
+When updating a file using "content":
+- Return the complete corrected source code.
+- Preserve imports that are still required.
+- Preserve existing component APIs and props unless the requested change requires changing them.
+- Preserve existing styling unless the requested change requires changing it.
+- Ensure all imports point to real files in the project.
+- Ensure exports match the existing project structure.
+- Ensure the resulting file is syntactically valid.
+- Ensure JSX is properly opened and closed.
+- Never include markdown code fences inside content.
+- Never include explanations inside content.
+
+REACT CORRECTNESS:
+
+- Use plain JavaScript/JSX only.
+- Do not use TypeScript.
+- Every component file must have exactly one default export.
+- Always use className instead of class.
+- Always use htmlFor instead of for.
+- Self-close void HTML elements.
+- Make sure all JSX tags are properly closed.
+- Do not introduce undefined variables or functions.
+- Event handlers must reference functions that exist in scope.
+- Do not introduce packages that are not already available in the project.
+
+IMPORTANT CONTEXT RULE:
+
+The file contents supplied in the context are the source of truth.
+
+Before creating a search/replace operation, verify that the exact search string exists in the supplied file content.
+
+If you cannot verify an exact search string, DO NOT use search/replace.
+
+Instead, return the complete corrected file using:
+
+{
+  "op": "update",
+  "path": "/path/to/file",
+  "content": "complete corrected file"
+}
+
+Be precise, preserve existing functionality, and make the smallest necessary changes.
+`;
 export const FILE_PLAN_SYSTEM = `${BASE_SYSTEM}
 
 You are planning which files to create for a React project.

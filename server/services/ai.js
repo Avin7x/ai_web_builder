@@ -205,39 +205,96 @@ export async function reviseProject(prompt, manifest, relevantFiles, recentMessa
         maxRetries: 2
     })
 
-    if(rawParsed && Array.isArray(rawParsed.operations)){
-        rawParsed.operations = rawParsed.operations.map((op)=>{
-            if(!op || typeof op !== "object") return op;
+   if (rawParsed && Array.isArray(rawParsed.operations)) {
+    rawParsed.operations = rawParsed.operations.map((op) => {
+        if (!op || typeof op !== "object") return op;
 
-            let opStr = String(op.op || "").trim().toLowerCase();
+        let opStr = String(op.op || "").trim().toLowerCase();
 
-            if(["create", "add", "new"].includes(opStr)) op.op = "create";
-            else if (["update", "edit", "modify", "patch"].includes(opStr)) op.op = "update";
-            else if (["delete", "remove", "del", "rm"].includes(opStr)) op.op = "delete";
+        if (["create", "add", "new"].includes(opStr)) {
+            op.op = "create";
+        } else if (["update", "edit", "modify", "patch"].includes(opStr)) {
+            op.op = "update";
+        } else if (["delete", "remove", "del", "rm"].includes(opStr)) {
+            op.op = "delete";
+        }
 
-            if(op.path && typeof op.path === "string" && !op.path.startsWith("/")){
-                op.path = "/" + op.path;
+        // Normalize path
+        if (
+            op.path &&
+            typeof op.path === "string" &&
+            !op.path.startsWith("/")
+        ) {
+            op.path = "/" + op.path;
+        }
+
+        // Normalize AI-generated content
+        if (op.content != null) {
+            op.content = normalizeContent(op.content);
+        }
+
+        if (op.search != null) {
+            op.search = normalizeContent(op.search);
+        }
+
+        if (op.replace != null) {
+            op.replace = normalizeContent(op.replace);
+        }
+
+        // CREATE → validate complete file
+        if (op.op === "create" && op.content != null) {
+            const validation = validateRevisionContent(
+                op.content,
+                op.path,
+                "create"
+            );
+
+            op.content = validation.content;
+
+            if (validation.warnings.length > 0) {
+                console.log(
+                    `[Validator] Revision Create adjustments for ${op.path}:\n  - ${validation.warnings.join("\n  - ")}`
+                );
             }
+        }
 
-            if (op.content) op.content = normalizeContent(op.content);
-            if (op.search) op.search = normalizeContent(op.search);
-            if (op.replace) op.replace = normalizeContent(op.replace);
+        // UPDATE → preferred method: complete file replacement
+        else if (op.op === "update" && op.content != null) {
+            const validation = validateRevisionContent(
+                op.content,
+                op.path,
+                "create"
+            );
 
-            if (op.op === "create" && op.content){
-                const validation = validateRevisionContent(op.content, op.path, "create");
-                op.content = validation.content;
-                if(validation.warnings.length > 0){
-                    console.log(`[Validator] Revision Create adjustments for ${op.path}:\n  - ${validation.warnings.join("\n  - ")}`);
-                }
-            }else if(op.op === "update" && op.replace){
-                 const validation = validateRevisionContent(op.replace, op.path, "update");
-                 op.replace = validation.content;
-                 if(validation.warnings.length > 0){
-                    console.log(`[Validator] Revision Update adjustments for ${op.path}:\n  - ${validation.warnings.join("\n  - ")}`);
-                 }
+            op.content = validation.content;
+
+            if (validation.warnings.length > 0) {
+                console.log(
+                    `[Validator] Revision Update adjustments for ${op.path}:\n  - ${validation.warnings.join("\n  - ")}`
+                );
             }
-            return op;
-        })
-    }
-    return rawParsed;
+        }
+
+        // UPDATE → fallback: search/replace
+        else if (op.op === "update" && op.replace != null) {
+            const validation = validateRevisionContent(
+                op.replace,
+                op.path,
+                "update"
+            );
+
+            op.replace = validation.content;
+
+            if (validation.warnings.length > 0) {
+                console.log(
+                    `[Validator] Revision Update adjustments for ${op.path}:\n  - ${validation.warnings.join("\n  - ")}`
+                );
+            }
+        }
+
+        return op;
+    });
+}
+
+return rawParsed;
 }
